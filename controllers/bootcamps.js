@@ -1,4 +1,7 @@
 const errorResponse = require("../utils/errorResponse");
+const dotenv = require("dotenv");
+dotenv.config({ path: "./config/config.env" });
+const geocoder = require("../utils/geocoder");
 const Bootcamp = require("../models/Bootcamp");
 const asyncHandler = require("../middleware/async");
 
@@ -7,7 +10,43 @@ const asyncHandler = require("../middleware/async");
 // @access  Public
 
 exports.getBootcamps = asyncHandler(async (req, res, next) => {
-  const bootcamps = await Bootcamp.find();
+  let query;
+
+  // Copied request.query
+  const reqQuery = { ...req.query };
+  
+  // Fields to exclude
+  const removeFields = ['select', 'sort'];
+
+  // Loop over removeFields and delete them from reqQuery
+  removeFields.forEach(param => delete reqQuery[param]);
+
+  // Create query strings
+  let queryStr = JSON.stringify(reqQuery);
+
+  // Create operators ($gt, $gte, etc)
+  queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
+
+  // Finding resources
+  query = Bootcamp.find(JSON.parse(queryStr));
+
+  // Selct Feilds
+  if (req.query.select) {
+    // This is done because mongoose takes in select queries with a space instead
+    // e.g req.query.select = 'name', 'description' should be just 'name' 'description'
+    const fields = req.query.select.split(',').join(' ')
+    query = query.select(fields);
+  }
+
+  // Sort
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(',').join(' ');
+    query = query.sort(sortBy);
+  } else {
+    query = query.sort('-createdAt');
+  }
+
+  const bootcamps = await query;
   res
     .status(200)
     .json({ success: true, count: bootcamps.length, data: bootcamps });
@@ -65,4 +104,31 @@ exports.deleteBootcamp = asyncHandler(async (req, res, next) => {
     }
 
     res.status(200).json({ success: true, data: {} });
+});
+
+// @desc    Get bootcamps within a radius
+// @route   Get /api/v1/bootcamps/radius/:zipcode/:distance
+// @access  Private
+exports.getBootcampInRadius = asyncHandler(async (req, res, next) => {
+  const { zipcode, distance } = req.params;
+
+  // Get latitude / longitude from geocoder
+  const loc = await geocoder.geocode(zipcode);
+  const lat = loc[0].latitude;
+  const lng = loc[0].longitude;
+
+  // Calculate radius using radian
+  // Divide distance by radius of the Earth
+  // Earth Radius = 3963miles / 6357km
+  const radius = distance / 3963;
+
+  const bootcamps = await Bootcamp.find({
+    location: { $geoWithin: { $centerSphere: [ [ lat, lng ], radius ] } }
+  });
+
+  res.status(200).json({
+    success: true,
+    count: bootcamps.length,
+    data: bootcamps
+  });
 });
