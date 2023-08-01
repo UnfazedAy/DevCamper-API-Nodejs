@@ -1,7 +1,4 @@
 const ErrorResponse = require("../utils/errorResponse");
-const dotenv = require("dotenv");
-dotenv.config({ path: "./config/config.env" });
-const geocoder = require("../utils/geocoder");
 const Course = require("../models/Course");
 const asyncHandler = require("../middleware/async");
 
@@ -26,6 +23,29 @@ exports.getCourses = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     count: courses.length,
+    data: courses
+  });
+});
+
+// @desc    Get single courses
+// @route   GET /api/v1/courses/:id
+// access   Public
+
+exports.getCourse = asyncHandler(async (req, res, next) => {
+  const courses = await Course.findById(req.params.id).populate({
+    path: 'bootcamp',
+    select: 'name description'
+  });
+
+  if (!courses) {
+    return next(
+      new ErrorResponse(`No course with the id of ${req.params.id}`),
+      404
+    );
+  }
+
+  res.status(200).json({
+    success: true,
     data: courses
   });
 });
