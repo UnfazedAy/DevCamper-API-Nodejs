@@ -1,4 +1,4 @@
-const errorResponse = require("../utils/errorResponse");
+const ErrorResponse = require("../utils/errorResponse");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config/config.env" });
 const geocoder = require("../utils/geocoder");
@@ -28,7 +28,7 @@ exports.getBootcamps = asyncHandler(async (req, res, next) => {
   queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
 
   // Finding resources
-  query = Bootcamp.find(JSON.parse(queryStr));
+  query = Bootcamp.find(JSON.parse(queryStr)).populate('courses');
 
   // Selct Feilds
   if (req.query.select) {
@@ -74,7 +74,6 @@ exports.getBootcamps = asyncHandler(async (req, res, next) => {
     }
   }
 
-
   res
     .status(200)
     .json({ success: true, count: bootcamps.length, pagination: pagination, data: bootcamps });
@@ -87,7 +86,7 @@ exports.getBootcamp = asyncHandler(async (req, res, next) => {
   const bootcamp = await Bootcamp.findById(req.params.id);
   if (!bootcamp) {
     return next(
-      new errorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+      new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
     );
   }
   res.status(200).json({ success: true, data: bootcamp });
@@ -112,7 +111,7 @@ exports.updateBootcamp = asyncHandler(async (req, res, next) => {
 
     if (!bootcamp) {
       return next(
-        new errorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+        new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
       );
     }
 
@@ -127,9 +126,11 @@ exports.deleteBootcamp = asyncHandler(async (req, res, next) => {
 
     if (!bootcamp) {
       return next(
-        new errorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+        new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
       );
     }
+
+    // bootcamp.deleteOne();
 
     res.status(200).json({ success: true, data: {} });
 });
