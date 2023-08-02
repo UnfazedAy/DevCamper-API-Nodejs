@@ -130,7 +130,7 @@ exports.deleteBootcamp = asyncHandler(async (req, res, next) => {
       );
     }
 
-    bootcamp.deleteOne();
+    await bootcamp.deleteOne();
 
     res.status(200).json({ success: true, data: {} });
 });
@@ -160,4 +160,21 @@ exports.getBootcampInRadius = asyncHandler(async (req, res, next) => {
     count: bootcamps.length,
     data: bootcamps
   });
+});
+
+
+// @desc    Upload photo for bootcamp
+// @route   PUT /api/v1/bootcamps/:id/photo
+// @access  Private
+exports.bootcampPhotoUpload = asyncHandler(async (req, res, next) => {
+  const bootcamp = await Bootcamp.findByIdAndDelete(req.params.id);
+
+  if (!bootcamp) {
+    return next(
+      new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+    );
+  }
+  if (!req.files) {
+    return next(new ErrorResponse(`Please upload a file`, 400));
+  }
 });
