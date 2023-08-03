@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 // const logger = require("./middleware/logger");
 const morgan = require("morgan");
 const colors = require('colors');
-
+const path = require('path');
 const errorHandler = require("./middleware/error");
 const connectDB = require("./config/db");
 
@@ -26,6 +26,9 @@ app.use(express.json())
 
 // File uploading
 app.use(fileupload())
+
+// Set static folder
+app.use(express.static(path.join(__dirname + '/public')));
 
 // Dev logging middleware
 if (process.env.NODE_ENV === "development") {
