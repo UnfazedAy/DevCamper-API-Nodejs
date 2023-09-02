@@ -12,7 +12,7 @@ const bootcamps = require("./routes/bootcamps");
 const courses = require("./routes/courses");
 const auth = require("./routes/auth");
 const fileupload = require("express-fileupload");
-// const cookieParser = require('cookie-parser');
+const cookieParser = require('cookie-parser');
 
 // Load env vars
 dotenv.config({ path: "./config/config.env" });
@@ -27,7 +27,7 @@ const app = express();
 app.use(express.json())
 
 // Cookie parser
-// app.use(cookieParser())
+app.use(cookieParser())
 
 // File uploading
 app.use(fileupload())
