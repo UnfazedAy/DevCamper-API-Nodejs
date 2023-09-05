@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Bootcamp = require("../models/Bootcamp");
 const advancedResults = require("../middleware/advancedResults");
+const { protect } = require("../middleware/auth");
 
 const {
   getBootcamps,
@@ -26,14 +27,14 @@ router
 router
   .route("/")
   .get(advancedResults(Bootcamp, 'courses'), getBootcamps)
-  .post(createBootcamp);
+  .post(protect, createBootcamp);
 
 router
   .route("/:id")
   .get(getBootcamp)
-  .put(updateBootcamp)
-  .delete(deleteBootcamp);
+  .put(protect, updateBootcamp)
+  .delete(protect, deleteBootcamp);
 
-router.route("/:id/photo").put(bootcampPhotoUpload);
+router.route("/:id/photo").put(protect, bootcampPhotoUpload);
 
 module.exports = router;
