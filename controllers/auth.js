@@ -2,7 +2,7 @@ const ErrorResponse = require("../utils/errorResponse");
 const User = require("../models/User");
 const asyncHandler = require("../middleware/async");
 
-// @desc    Register bootcamps
+// @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
 exports.register = asyncHandler(async (req, res, next) => {
