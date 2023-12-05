@@ -1,6 +1,7 @@
 const ErrorResponse = require("../utils/errorResponse");
 const User = require("../models/User");
 const asyncHandler = require("../middleware/async");
+const sendEmail = require("../utils/sendEmail");
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -43,6 +44,14 @@ exports.login = asyncHandler(async (req, res, next) => {
   sendTokenResponse(user, 200, res);
 });
 
+// @desc    Get current logged in user
+// @route   POST /api/auth/me
+// @access  Private
+exports.getMe = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id)
+  res.status(200).json({ success: true, data: user });
+})
+
 // Get token from model, create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
   const token = user.getSignedJwtToken();
@@ -60,10 +69,34 @@ const sendTokenResponse = (user, statusCode, res) => {
     .json({ success: true, token: token });
 }
 
-// @desc    Get current logged in user
-// @route   POST /api/auth/me
+// @desc    Forgot password
+// @route   POST /api/auth/forgot password
 // @access  Private
-exports.getMe = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id)
+exports.forgotPassword = asyncHandler(async (req, res, next) => {
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) {
+    return next (new ErrorResponse("There is no user with that email", 404));
+  }
+  // Get reset token
+  user.getResetPasswordToken();
+  // Save the user
+  await user.save({ validateBeforeSave: false });
+  // Create reset url
+  const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/resetpassword/${user.resetPasswordToken}`;
+  const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Password reset token',
+      message
+    });
+    res.status(200).json({ success: true, data: 'Email sent' });
+  } catch (err) {
+    console.log(err);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+    return next (new ErrorResponse("Email could not be sent", 500));
+  }
   res.status(200).json({ success: true, data: user });
 })
